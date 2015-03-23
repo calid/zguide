@@ -17,7 +17,7 @@ $subscriber->subscribe('');
 # 0MQ is so fast, we need to wait a while...
 sleep 1;
 
-# Second, synchronize with publisher
+# Second, synchronize start with publisher
 my $syncclient = $context->socket(ZMQ_REQ);
 $syncclient->connect('tcp://localhost:5562');
 
@@ -35,3 +35,11 @@ while (1) {
 }
 
 say "Received $update_nbr updates";
+
+# Finally, synchronize done with publisher
+
+# send done message
+$syncclient->send('');
+
+# wait for done acknowledgment
+$syncclient->recv();

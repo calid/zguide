@@ -4,6 +4,8 @@ use strict;
 use warnings;
 use v5.10;
 
+use Time::HiRes qw(usleep);
+
 use ZMQ::FFI;
 use ZMQ::FFI::Constants qw(ZMQ_PUB ZMQ_REP ZMQ_SNDHWM);
 
@@ -40,5 +42,24 @@ for (1..1_000_000) {
     $publisher->send("Rhubarb");
 }
 
-$publisher->send("END");
+my $done_subscribers = 0;
+until ($done_subscribers == $SUBSCRIBERS_EXPECTED) {
+    # continue sending END until all subscribers report done
+    $publisher->send("END");
+
+    while ($syncservice->has_pollin) {
+        # get done message
+        $syncservice->recv();
+
+        # send done acknowledgment
+        $syncservice->send('');
+
+        $done_subscribers++;
+        say "+1 subscriber done ($done_subscribers/$SUBSCRIBERS_EXPECTED)";
+    }
+
+    # sleep 100ms
+    usleep 100_000
+}
+
 say "Done";
