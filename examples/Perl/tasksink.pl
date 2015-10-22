@@ -12,8 +12,8 @@ use ZMQ::FFI;
 use ZMQ::FFI::Constants qw(ZMQ_PULL);
 
 # Prepare our context and socket
-my $ctx      = ZMQ::FFI->new();
-my $receiver = $ctx->socket(ZMQ_PULL);
+my $context = ZMQ::FFI->new();
+my $receiver = $context->socket(ZMQ_PULL);
 $receiver->bind('tcp://*:5558');
 
 # Wait for start of batch

@@ -9,14 +9,14 @@ use v5.10;
 use ZMQ::FFI;
 use ZMQ::FFI::Constants qw(ZMQ_PUSH);
 
-my $ctx = ZMQ::FFI->new();
+my $context = ZMQ::FFI->new();
 
 # Socket to send messages on
-my $sender = $ctx->socket(ZMQ_PUSH);
+my $sender = $context->socket(ZMQ_PUSH);
 $sender->bind('tcp://*:5557');
 
 # Socket to send start of batch message on
-my $sink = $ctx->socket(ZMQ_PUSH);
+my $sink = $context->socket(ZMQ_PUSH);
 $sink->connect('tcp://localhost:5558');
 
 say "Press Enter when the workers are ready: ";
@@ -30,6 +30,7 @@ $sink->send('0');
 my $total_msec = 0;
 my $workload;
 for (1..100) {
+    # Random workload from 1 to 100msecs
     $workload    = int(rand(100) + 1);
     $total_msec += $workload;
 
