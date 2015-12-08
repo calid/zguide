@@ -10,13 +10,13 @@ namespace Examples
 {
 	static partial class Program
 	{
-		public static void Espresso(string[] args)
+		public static void Espresso0(string[] args)
 		{
 			//
-			// Espresso Pattern
+			// Espresso Pattern, like orig C implementation
 			// This shows how to capture data using a pub-sub proxy
 			//
-			// Author: metadings
+			// Author: chubbson
 			//
 
 			using (var context = new ZContext())
@@ -24,9 +24,9 @@ namespace Examples
 			using (var publisher = new ZSocket(context, ZSocketType.XPUB))
 			using (var listener = new ZSocket(context, ZSocketType.PAIR))
 			{
-				new Thread(() => Espresso_Publisher(context)).Start();
-				new Thread(() => Espresso_Subscriber(context)).Start();
-				new Thread(() => Espresso_Listener(context)).Start();
+				new Thread(() => Espresso0_Publisher(context)).Start();
+				new Thread(() => Espresso0_Subscriber(context)).Start();
+				new Thread(() => Espresso0_Listener(context)).Start();
 
 				subscriber.Connect("tcp://127.0.0.1:6000");
 				publisher.Bind("tcp://*:6001");
@@ -42,41 +42,35 @@ namespace Examples
 			}
 		}
 
-		static void Espresso_Publisher(ZContext context) 
+		static void Espresso0_Publisher(ZContext context) 
 		{
 			// The publisher sends random messages starting with A-J:
-
 			using (var publisher = new ZSocket(context, ZSocketType.PUB))
 			{
 				publisher.Bind("tcp://*:6000");
 
+				var rnd = new Random();
 				ZError error;
-
 				while (true)
 				{
-					var bytes = new byte[5];
-					using (var rng = new System.Security.Cryptography.RNGCryptoServiceProvider())
-					{
-						rng.GetBytes(bytes);
-					}
-					var frame = new ZFrame(bytes);
-					if (!publisher.Send(frame, out error))
+					var s = String.Format("{0}-{1,0:D5}", (char)(rnd.Next(10) + 'A'), rnd.Next(100000));
+					if (!publisher.SendFrame(new ZFrame(s), out error))
 					{
 						if (error == ZError.ETERM)
-							return;	// Interrupted
+							return; // Interrupted
 						throw new ZException(error);
 					}
 
-					Thread.Sleep(1);
+					Thread.Sleep(100); // Wait for 1/10th second
 				}
 			}
 		}
 
-		static void Espresso_Subscriber(ZContext context) 
+		// The subscriber thread requests messages starting with
+		// A and B, then reads and counts incoming messages.
+		static void Espresso0_Subscriber(ZContext context) 
 		{
-			// The subscriber thread requests messages starting with
-			// A and B, then reads and counts incoming messages.
-
+			// Subscrie to "A" and "B"
 			using (var subscriber = new ZSocket(context, ZSocketType.SUB))
 			{
 				subscriber.Connect("tcp://127.0.0.1:6001");
@@ -84,17 +78,16 @@ namespace Examples
 				subscriber.Subscribe("B");
 
 				ZError error;
-				ZFrame frame;
+				ZFrame frm;
 				int count = 0;
 				while (count < 5)
 				{
-					if (null == (frame = subscriber.ReceiveFrame(out error)))
+					if (null == (frm = subscriber.ReceiveFrame(out error)))
 					{
 						if (error == ZError.ETERM)
 							return;	// Interrupted
 						throw new ZException(error);
 					}
-
 					++count;
 				}
 
@@ -102,7 +95,7 @@ namespace Examples
 			}
 		}
 
-		static void Espresso_Listener(ZContext context) 
+		static void Espresso0_Listener(ZContext context) 
 		{
 			// The listener receives all messages flowing through the proxy, on its
 			// pipe. In CZMQ, the pipe is a pair of ZMQ_PAIR sockets that connect
@@ -112,6 +105,7 @@ namespace Examples
 			{
 				listener.Connect("inproc://listener");
 
+				//Print everything that arrives on pipe
 				ZError error;
 				ZFrame frame;
 				while (true)
@@ -119,24 +113,7 @@ namespace Examples
 					if (null != (frame = listener.ReceiveFrame(out error)))
 					{
 						using (frame)
-						{
-							byte first = frame.ReadAsByte();
-
-							var rest = new byte[9];
-							frame.Read(rest, 0, rest.Length);
-
-							Console.WriteLine("{0} {1}", (char)first, rest.ToHexString());
-
-							if (first == 0x01)
-							{
-								// Subscribe
-							}
-							else if (first == 0x00)
-							{
-								// Unsubscribe
-								context.Shutdown();
-							}
-						}
+							frame.DumpZfrm();
 					}
 					else
 					{

@@ -53,9 +53,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
-    <Reference Include="ZeroMQ, Version=4.1.0.38537, Culture=neutral, PublicKeyToken=4a9630883fd6c563, processorArchitecture=MSIL">
+    <Reference Include="ZeroMQ">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\ZeroApp-Network\ZeroMQ\bin\Debug\ZeroMQ.dll</HintPath>
+      <HintPath>ZeroMQ.dll</HintPath>
     </Reference>
     <Reference Include="System.Xml" />
   </ItemGroup>
@@ -63,6 +63,7 @@
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="asyncsrv.cs" />
     <Compile Include="eagain.cs" />
+    <Compile Include="espresso0.cs" />
     <Compile Include="espresso.cs" />
     <Compile Include="flcliapi.cs" />
     <Compile Include="flclient1.cs" />
